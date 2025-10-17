@@ -7,6 +7,11 @@ import uuid
 def main():
     categorias = ["Ciencia", "Literatura", "Historia"]
 
+    # Libros iniciales
+    vm.create_libro("Fisica Basica", "Serway", "Ciencia")
+    vm.create_libro("Cien años de soledad", "Gabriel Garcia Marquez", "Literatura")
+    vm.create_libro("Historia Universal", "Juan Perez", "Historia")
+
     while True:
         print("\n--- Menu Biblioteca Universitaria ---")
         print("1. Mostrar libros")

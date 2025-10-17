@@ -27,9 +27,10 @@ def main():
             if not libros:
                 print("No hay libros en la biblioteca.")
             else:
-                for libro_id, data in libros.items():
+                for data in libros.values():
                     estado = "Disponible" if data["disponible"] else "Prestado"
                     print(f"Título: {data['titulo']}, Autor: {data['autor']}, Categoria: {data['categoria']}, Estado: {estado}")
+
 
         elif opcion == "2":
             titulo = input("Titulo del libro: ")
@@ -60,26 +61,44 @@ def main():
                 continue
 
             libros = vm.libros_ref.get() or {}
+            disponibles = {lid: data for lid, data in libros.items() if data["disponible"]}
+
+            if not disponibles:
+                print("No hay libros disponibles en este momento.")
+                continue
+
             print("Libros disponibles:")
-            for libro_id, data in libros.items():
-                if data["disponible"]:
-                    print(f"{libro_id}: {data['titulo']} ({data['categoria']})")
+            for idx, (lid, data) in enumerate(disponibles.items(), start=1):
+                print(f"{idx}. {data['titulo']} ({data['categoria']})")
 
-            libro_id = input("ID del libro a prestar: ")
-            libro_data = vm.get_libro(libro_id)
-            if not libro_data:
-                print("Libro no encontrado.")
-                continue
-            if not libro_data["disponible"]:
-                print("Libro no disponible.")
+            # Selección por número
+            try:
+                seleccion = int(input("Seleccione el número del libro a prestar: ")) - 1
+                if not (0 <= seleccion < len(disponibles)):
+                    print("Número inválido.")
+                    continue
+            except ValueError:
+                print("Entrada inválida.")
                 continue
 
-            # Actualizar disponibilidad y agregar a usuario
+            # ID del libro seleccionado
+            libro_id = list(disponibles.keys())[seleccion]
+            libro_data = disponibles[libro_id]
+
+            # Actualizar disponibilidad en Firebase
             vm.update_libro(libro_id, disponible=False)
+
+            # Guardar libro prestado en usuario con ID incluido
             libros_prestados = usuario_data.get("libros_prestados", [])
-            libros_prestados.append(Libro(libro_data["titulo"], libro_data["autor"], libro_data["categoria"]).to_dict())
+            libros_prestados.append({
+                "id": libro_id,
+                "titulo": libro_data["titulo"],
+                "autor": libro_data["autor"],
+                "categoria": libro_data["categoria"]
+            })
             vm.update_usuario(id_usuario, libros_prestados=libros_prestados)
-            print("Libro prestado correctamente.")
+
+            print(f"Libro '{libro_data['titulo']}' prestado correctamente.")
 
         elif opcion == "5":
             id_usuario = input("ID del usuario: ")
